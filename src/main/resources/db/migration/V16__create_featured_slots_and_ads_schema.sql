@@ -1,5 +1,5 @@
--- =========================================================================
--- AbhiiKhula Database Migration V16: Featured Listings & Local Ads (BRD M10, Section 21 & 29)
+﻿-- =========================================================================
+-- SkipQ Database Migration V16: Featured Listings & Local Ads (BRD M10, Section 21 & 29)
 -- =========================================================================
 
 CREATE TABLE featured_slots (

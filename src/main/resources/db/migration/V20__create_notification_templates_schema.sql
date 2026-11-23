@@ -1,4 +1,4 @@
--- =============================================================================
+﻿-- =============================================================================
 -- Migration: V20__create_notification_templates_schema.sql
 -- Description: M14 Dynamic Comms & Notification Templates Engine (BRD Section 25, Annexure A)
 -- =============================================================================
@@ -40,12 +40,12 @@ VALUES
 -- 1. two_ahead (Token approaching)
 ('two_ahead', 'PUSH', 'hi', 'Aapka number aane wala hai!', 'Aapke aage sirf 2 log hain {{shop}} par. Kripya dukaan pahuchein. Token #{{number}}, ETA {{eta}} min.', 'shop,number,eta', TRUE),
 ('two_ahead', 'PUSH', 'en', 'Your turn is almost here!', 'Only 2 people ahead of you at {{shop}}. Please reach the shop. Token #{{number}}, ETA {{eta}} mins.', 'shop,number,eta', TRUE),
-('two_ahead', 'SMS', 'hi', 'AbhiiKhula Alert', 'AbhiiKhula: Aapke aage 2 log hain {{shop}} par. Token #{{number}}. Kripya pahuchein.', 'shop,number', TRUE),
+('two_ahead', 'SMS', 'hi', 'SkipQ Alert', 'SkipQ: Aapke aage 2 log hain {{shop}} par. Token #{{number}}. Kripya pahuchein.', 'shop,number', TRUE),
 
 -- 2. called (Now serving)
 ('called', 'PUSH', 'hi', 'Aapka number aa gaya!', 'Token #{{number}} ko {{shop}} par bulaya jaa raha hai. Kripya counter par jaayein.', 'shop,number', TRUE),
 ('called', 'PUSH', 'en', 'Your turn is now!', 'Token #{{number}} is being called at {{shop}}. Please proceed to the counter.', 'shop,number', TRUE),
-('called', 'SMS', 'hi', 'AbhiiKhula Alert', 'AbhiiKhula: Token #{{number}} is NOW SERVING at {{shop}}. Kripya counter par pahuchein.', 'shop,number', TRUE),
+('called', 'SMS', 'hi', 'SkipQ Alert', 'SkipQ: Token #{{number}} is NOW SERVING at {{shop}}. Kripya counter par pahuchein.', 'shop,number', TRUE),
 
 -- 3. hold_warning (10 min hold before auto-cancel)
 ('hold_warning', 'PUSH', 'hi', 'Token Hold Warning', 'Aapka token #{{number}} {{shop}} par hold kar diya gaya hai. 10 minute me cancel ho jayega.', 'shop,number', TRUE),

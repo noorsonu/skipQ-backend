@@ -1,5 +1,5 @@
--- =========================================================================
--- AbhiiKhula Database Migration V15: Subscriptions & Billing Engine (BRD M9, Section 20 & 29)
+﻿-- =========================================================================
+-- SkipQ Database Migration V15: Subscriptions & Billing Engine (BRD M9, Section 20 & 29)
 -- =========================================================================
 
 -- 1. Subscriptions Table

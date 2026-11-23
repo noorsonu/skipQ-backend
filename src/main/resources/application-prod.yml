@@ -1,4 +1,4 @@
-spring:
+﻿spring:
   config:
     activate:
       on-profile: prod
@@ -27,6 +27,6 @@ spring:
 logging:
   level:
     root: INFO
-    in.abhiikhula: INFO
+    in.skipQ: INFO
     org.hibernate.SQL: WARN
 

@@ -1,4 +1,4 @@
-# SkipQ Backend
+﻿# SkipQ Backend
 
 Spring Boot backend for SkipQ - Hyperlocal Live Availability & Virtual Queue Platform.
 
@@ -10,6 +10,6 @@ Spring Boot backend for SkipQ - Hyperlocal Live Availability & Virtual Queue Pla
 - Database username: postgres
 - Server port: 8080
 
-Create the PostgreSQL database `skipq_db`, then open the project in IntelliJ IDEA or STS and run `AbhiiKhulaApplication`.
+Create the PostgreSQL database `skipq_db`, then open the project in IntelliJ IDEA or STS and run `SkipQApplication`.
 
 No business modules, entities, repositories, services, or APIs have been added yet.
