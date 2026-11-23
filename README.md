@@ -1,6 +1,6 @@
-# AbhiiKhula
+# SkipQ Backend
 
-Initial Spring Boot monolithic project setup.
+Spring Boot backend for SkipQ - Hyperlocal Live Availability & Virtual Queue Platform.
 
 - Java: 21
 - Spring Boot: 3.5.5

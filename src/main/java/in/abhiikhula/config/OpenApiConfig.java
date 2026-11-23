@@ -28,13 +28,13 @@ public class OpenApiConfig {
                                         .bearerFormat("JWT")
                                         .description("Enter your JWT token directly or with 'Bearer ' prefix.")))
                 .info(new Info()
-                        .title("AbhiiKhula API Documentation")
-                        .description("Hyperlocal Live Local Availability & Virtual Queue Platform (BRD: AKH-BRD-001 v1.1)")
+                        .title("SkipQ API Documentation")
+                        .description("SkipQ - Hyperlocal Live Availability & Virtual Queue Platform")
                         .version("1.0.0")
                         .contact(new Contact()
-                                .name("AbhiiKhula Team")
-                                .url("https://abhiikhula.in")
-                                .email("founder@abhiikhula.in"))
+                                .name("SkipQ Team")
+                                .url("https://skipq.in")
+                                .email("support@skipq.in"))
                         .license(new License().name("Internal - Confidential")));
     }
 }

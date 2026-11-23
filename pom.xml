@@ -7,8 +7,8 @@
     <groupId>in.abhiikhula</groupId>
     <artifactId>abhiikhula</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>AbhiiKhula</name>
-    <description>AbhiiKhula application</description>
+    <name>SkipQ</name>
+    <description>SkipQ application</description>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
