@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
 
     @Bean
-    public OpenAPI abhiiKhulaOpenAPI() {
+    public OpenAPI skipQOpenAPI() {
         final String securitySchemeName = "bearerAuth";
 
         return new OpenAPI()
