@@ -332,7 +332,7 @@ public class AuthServiceImpl implements AuthService {
                 user = userRepository.save(user);
             }
 
-            // Link missing identifier if provided during login
+            // Link missing identifier or clean name if provided during login
             boolean updated = false;
             if (phone != null && user.getPhone() == null) {
                 user.setPhone(phone);
@@ -341,6 +341,13 @@ public class AuthServiceImpl implements AuthService {
             if (email != null && user.getEmail() == null) {
                 user.setEmail(email);
                 updated = true;
+            }
+            if (request.getName() != null && !request.getName().isBlank()) {
+                String existingName = user.getName();
+                if (existingName == null || existingName.isBlank() || existingName.matches("^\\+?\\d{6,}$")) {
+                    user.setName(request.getName().trim());
+                    updated = true;
+                }
             }
             if (updated) {
                 user = userRepository.save(user);
