@@ -236,9 +236,8 @@ public class AuthServiceImpl implements AuthService {
             throw new in.skipQ.common.exception.BadRequestException("Please enter a valid 10-digit mobile number or email address.");
         }
 
-        // Determine if action is Registration or Login
-        boolean isRegisterAction = "register".equalsIgnoreCase(request.getAction()) ||
-                (request.getName() != null && !request.getName().isBlank() && !"login".equalsIgnoreCase(request.getAction()));
+        // Determine if action is Registration or Login - STRICT: Only "register" triggers registration
+        boolean isRegisterAction = "register".equalsIgnoreCase(request.getAction());
 
         log.info("Direct auth request: action={}, phone={}, email={}", isRegisterAction ? "register" : "login", phone, email);
 
