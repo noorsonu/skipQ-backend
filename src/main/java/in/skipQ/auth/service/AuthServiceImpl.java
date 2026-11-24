@@ -6,6 +6,7 @@ import in.skipQ.auth.dto.SendOtpResponse;
 import in.skipQ.auth.dto.VerifyOtpRequest;
 import in.skipQ.auth.jwt.JwtUtil;
 import in.skipQ.auth.otp.OtpStore;
+import in.skipQ.common.exception.BadRequestException;
 import in.skipQ.common.exception.ResourceNotFoundException;
 import in.skipQ.common.exception.UnauthorizedException;
 import in.skipQ.user.model.User;
