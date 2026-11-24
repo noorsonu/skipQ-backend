@@ -235,7 +235,12 @@ public class AuthServiceImpl implements AuthService {
         if (phone == null && email == null) {
             throw new in.skipQ.common.exception.BadRequestException("Please enter a valid 10-digit mobile number or email address.");
         }
-        log.info("Direct login request for phone: {}, email: {}", phone, email);
+
+        // Determine if action is Registration or Login
+        boolean isRegisterAction = "register".equalsIgnoreCase(request.getAction()) ||
+                (request.getName() != null && !request.getName().isBlank() && !"login".equalsIgnoreCase(request.getAction()));
+
+        log.info("Direct auth request: action={}, phone={}, email={}", isRegisterAction ? "register" : "login", phone, email);
 
         User user = null;
         if (email != null) {
@@ -244,32 +249,78 @@ public class AuthServiceImpl implements AuthService {
         if (user == null && phone != null) {
             user = userRepository.findByPhone(phone).orElse(null);
         }
+
         boolean isNewUser = false;
 
-        if (user == null) {
-            log.info("Identifier phone={}, email={} not registered. Auto-registering new user via direct login.", phone, email);
+        if (isRegisterAction) {
+            // ==========================================
+            // 1. REGISTRATION FLOW:
+            // Check if phone or email already registered
+            // ==========================================
+            if (phone != null && userRepository.findByPhone(phone).isPresent()) {
+                throw new in.skipQ.common.exception.DuplicateResourceException(
+                        "An account is already registered with mobile number (+91 " + phone + "). Please switch to Log In.");
+            }
+            if (email != null && userRepository.findByEmail(email).isPresent()) {
+                throw new in.skipQ.common.exception.DuplicateResourceException(
+                        "An account is already registered with email address (" + email + "). Please switch to Log In.");
+            }
+
+            if (request.getName() == null || request.getName().trim().isBlank()) {
+                throw new in.skipQ.common.exception.BadRequestException("Full name is required for registration.");
+            }
+            if (phone == null || phone.length() != 10) {
+                throw new in.skipQ.common.exception.BadRequestException("A valid 10-digit mobile number is required for registration.");
+            }
+            if (email == null || !email.contains("@")) {
+                throw new in.skipQ.common.exception.BadRequestException("A valid email address is required for registration.");
+            }
+            if (request.getPassword() == null || request.getPassword().trim().length() < 4) {
+                throw new in.skipQ.common.exception.BadRequestException("Password must be at least 4 characters long.");
+            }
+
             UserRole role = UserRole.CUSTOMER;
             if (request.getRole() != null && (request.getRole().equalsIgnoreCase("MERCHANT") || request.getRole().equalsIgnoreCase("SHOP_OWNER"))) {
                 role = UserRole.SHOP_OWNER;
+            } else {
+                // Customer must provide valid age
+                if (request.getAge() == null || request.getAge() < 5 || request.getAge() > 115) {
+                    throw new in.skipQ.common.exception.BadRequestException("Please enter a valid age (between 5 and 115) for customer registration.");
+                }
             }
 
-            String defaultName = request.getName() != null && !request.getName().isBlank() 
-                    ? request.getName().trim() 
-                    : (phone != null ? "Customer (" + phone.substring(phone.length() - 4) + ")" : email.split("@")[0]);
             user = User.builder()
                     .phone(phone)
-                    .name(defaultName)
+                    .name(request.getName().trim())
                     .age(request.getAge())
                     .email(email)
-                    .password(request.getPassword() != null ? request.getPassword().trim() : null)
+                    .password(request.getPassword().trim())
                     .role(role)
                     .language("hi")
                     .blocked(false)
                     .build();
             user = userRepository.save(user);
             isNewUser = true;
+            log.info("Successfully registered new user {} with role: {}", user.getId(), role);
+
         } else {
-            // Verify password if user already has a password set
+            // ==========================================
+            // 2. LOGIN FLOW:
+            // Must strictly check in database first!
+            // If not found, DO NOT auto-register or login!
+            // ==========================================
+            if (user == null) {
+                String missingId = email != null ? "email address (" + email + ")" : "mobile number (+91 " + phone + ")";
+                throw new in.skipQ.common.exception.ResourceNotFoundException("Account not found with this " + missingId + ". Please register your account first.");
+            }
+
+            if (Boolean.TRUE.equals(user.getBlocked())) {
+                throw new UnauthorizedException("Your account has been suspended. Please contact support.");
+            } else if (Boolean.TRUE.equals(user.getDeleted())) {
+                throw new UnauthorizedException("This account has been deleted. Please register with a new number or contact support.");
+            }
+
+            // Verify password
             if (user.getPassword() != null && !user.getPassword().isBlank()) {
                 if (request.getPassword() == null || request.getPassword().isBlank()) {
                     throw new UnauthorizedException("Password is required to sign in.");
@@ -278,10 +329,11 @@ public class AuthServiceImpl implements AuthService {
                     throw new UnauthorizedException("Incorrect password. Please try again or click 'Forgot Password'.");
                 }
             } else if (request.getPassword() != null && !request.getPassword().isBlank()) {
-                // First-time password set for legacy / previously passwordless user
                 user.setPassword(request.getPassword().trim());
+                user = userRepository.save(user);
             }
 
+            // Link missing identifier if provided during login
             boolean updated = false;
             if (phone != null && user.getPhone() == null) {
                 user.setPhone(phone);
@@ -291,34 +343,13 @@ public class AuthServiceImpl implements AuthService {
                 user.setEmail(email);
                 updated = true;
             }
-            if (request.getName() != null && !request.getName().isBlank() && (user.getName() == null || user.getName().isBlank())) {
-                user.setName(request.getName().trim());
-                updated = true;
-            }
-            if (request.getAge() != null && user.getAge() == null) {
-                user.setAge(request.getAge());
-                updated = true;
-            }
-            if (request.getEmail() != null && !request.getEmail().isBlank() && (user.getEmail() == null || user.getEmail().isBlank())) {
-                user.setEmail(request.getEmail().trim().toLowerCase());
-                updated = true;
-            }
-            if (request.getRole() != null && (request.getRole().equalsIgnoreCase("MERCHANT") || request.getRole().equalsIgnoreCase("SHOP_OWNER")) && user.getRole() != UserRole.SHOP_OWNER) {
-                user.setRole(UserRole.SHOP_OWNER);
-                updated = true;
-            }
             if (updated) {
                 user = userRepository.save(user);
-            }
-            if (Boolean.TRUE.equals(user.getBlocked())) {
-                throw new UnauthorizedException("Your account has been suspended. Please contact support.");
-            } else if (Boolean.TRUE.equals(user.getDeleted())) {
-                throw new UnauthorizedException("This account has been deleted. Please contact support.");
             }
         }
 
         String token = jwtUtil.generateToken(user);
-        log.info("User {} authenticated successfully via direct login. New user: {}", user.getId(), isNewUser);
+        log.info("User {} authenticated successfully. New user: {}", user.getId(), isNewUser);
 
         return AuthResponse.builder()
                 .token(token)

@@ -23,4 +23,6 @@ public class DirectLoginRequest {
     private String password;
 
     private String role; // CUSTOMER or MERCHANT
+
+    private String action; // "login" or "register"
 }
