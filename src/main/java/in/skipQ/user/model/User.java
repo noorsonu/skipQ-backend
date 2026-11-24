@@ -33,6 +33,9 @@ public class User {
     @Column(length = 150)
     private String email;
 
+    @Column(length = 255)
+    private String password;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "preferred_zone_id")
     private in.skipQ.zone.model.Zone preferredZone;

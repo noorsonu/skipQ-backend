@@ -59,6 +59,20 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok(response, "Authentication successful"));
     }
 
+    @PostMapping("/google-login")
+    @Operation(summary = "Authenticate with Google", description = "Authenticates or registers user via Google account and returns JWT Bearer token")
+    public ResponseEntity<ApiResponse<AuthResponse>> googleLogin(@Valid @RequestBody in.skipQ.auth.dto.GoogleLoginRequest request) {
+        AuthResponse response = authService.googleLogin(request);
+        return ResponseEntity.ok(ApiResponse.ok(response, "Google authentication successful"));
+    }
+
+    @PostMapping("/direct-login")
+    @Operation(summary = "Direct phone authentication without SMS OTP", description = "Instantly logs in or auto-registers customer/merchant without requiring SMS OTP")
+    public ResponseEntity<ApiResponse<AuthResponse>> directLogin(@Valid @RequestBody in.skipQ.auth.dto.DirectLoginRequest request) {
+        AuthResponse response = authService.directLogin(request);
+        return ResponseEntity.ok(ApiResponse.ok(response, "Direct authentication successful"));
+    }
+
     @GetMapping("/me")
     @Operation(summary = "Get current authenticated user profile", description = "Decodes JWT and fetches current user details")
     public ResponseEntity<ApiResponse<User>> getCurrentUser(@RequestHeader(value = "Authorization", required = false) String token) {

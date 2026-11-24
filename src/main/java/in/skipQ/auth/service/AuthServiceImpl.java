@@ -132,5 +132,161 @@ public class AuthServiceImpl implements AuthService {
         }
         return user;
     }
+
+    @Override
+    @Transactional
+    public AuthResponse googleLogin(in.skipQ.auth.dto.GoogleLoginRequest request) {
+        String email = request.getEmail().trim().toLowerCase();
+        log.info("Google login request for email: {}", email);
+
+        User user = userRepository.findByEmail(email).orElse(null);
+        boolean isNewUser = false;
+
+        // If not found by email, check if phone was provided and matches
+        if (user == null && request.getPhone() != null && !request.getPhone().isBlank()) {
+            String cleanPhone = request.getPhone().replaceAll("\\D", "");
+            if (cleanPhone.length() >= 10) {
+                cleanPhone = cleanPhone.substring(cleanPhone.length() - 10);
+                user = userRepository.findByPhone(cleanPhone).orElse(null);
+                if (user != null && (user.getEmail() == null || user.getEmail().isBlank())) {
+                    user.setEmail(email);
+                    user = userRepository.save(user);
+                }
+            }
+        }
+
+        if (user == null) {
+            log.info("Email {} not registered. Auto-registering new user via Google.", email);
+            UserRole role = UserRole.CUSTOMER;
+            if (request.getRole() != null && (request.getRole().equalsIgnoreCase("MERCHANT") || request.getRole().equalsIgnoreCase("SHOP_OWNER"))) {
+                role = UserRole.SHOP_OWNER;
+            }
+            String cleanPhone = null;
+            if (request.getPhone() != null && !request.getPhone().isBlank()) {
+                cleanPhone = request.getPhone().replaceAll("\\D", "");
+                if (cleanPhone.length() >= 10) cleanPhone = cleanPhone.substring(cleanPhone.length() - 10);
+            }
+            user = User.builder()
+                    .email(email)
+                    .phone(cleanPhone)
+                    .name(request.getName() != null && !request.getName().isBlank() ? request.getName().trim() : "Google User")
+                    .role(role)
+                    .language("hi")
+                    .blocked(false)
+                    .build();
+            user = userRepository.save(user);
+            isNewUser = true;
+        } else {
+            boolean updated = false;
+            if (user.getEmail() == null || user.getEmail().isBlank()) {
+                user.setEmail(email);
+                updated = true;
+            }
+            if (request.getName() != null && !request.getName().isBlank() && (user.getName() == null || user.getName().isBlank())) {
+                user.setName(request.getName().trim());
+                updated = true;
+            }
+            if (request.getRole() != null && (request.getRole().equalsIgnoreCase("MERCHANT") || request.getRole().equalsIgnoreCase("SHOP_OWNER")) && user.getRole() != UserRole.SHOP_OWNER) {
+                user.setRole(UserRole.SHOP_OWNER);
+                updated = true;
+            }
+            if (updated) {
+                user = userRepository.save(user);
+            }
+            if (Boolean.TRUE.equals(user.getBlocked())) {
+                throw new UnauthorizedException("Your account has been suspended. Please contact support.");
+            } else if (Boolean.TRUE.equals(user.getDeleted())) {
+                throw new UnauthorizedException("This account has been deleted. Please contact support.");
+            }
+        }
+
+        String token = jwtUtil.generateToken(user);
+        log.info("User {} authenticated successfully via Google. New user: {}", user.getId(), isNewUser);
+
+        return AuthResponse.builder()
+                .token(token)
+                .tokenType("Bearer")
+                .userId(user.getId())
+                .phone(user.getPhone())
+                .email(user.getEmail())
+                .name(user.getName())
+                .age(user.getAge())
+                .role(user.getRole())
+                .newUser(isNewUser)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public AuthResponse directLogin(in.skipQ.auth.dto.DirectLoginRequest request) {
+        String phone = request.getPhone().replaceAll("\\D", "");
+        if (phone.length() >= 10) {
+            phone = phone.substring(phone.length() - 10);
+        }
+        log.info("Direct login request for phone: {}", phone);
+
+        User user = userRepository.findByPhone(phone).orElse(null);
+        boolean isNewUser = false;
+
+        if (user == null) {
+            log.info("Phone {} not registered. Auto-registering new user via direct login.", phone);
+            UserRole role = UserRole.CUSTOMER;
+            if (request.getRole() != null && (request.getRole().equalsIgnoreCase("MERCHANT") || request.getRole().equalsIgnoreCase("SHOP_OWNER"))) {
+                role = UserRole.SHOP_OWNER;
+            }
+            user = User.builder()
+                    .phone(phone)
+                    .name(request.getName() != null && !request.getName().isBlank() ? request.getName().trim() : "Customer (" + phone.substring(phone.length() - 4) + ")")
+                    .age(request.getAge())
+                    .password(request.getPassword() != null ? request.getPassword().trim() : null)
+                    .role(role)
+                    .language("hi")
+                    .blocked(false)
+                    .build();
+            user = userRepository.save(user);
+            isNewUser = true;
+        } else {
+            boolean updated = false;
+            if (request.getName() != null && !request.getName().isBlank() && (user.getName() == null || user.getName().isBlank())) {
+                user.setName(request.getName().trim());
+                updated = true;
+            }
+            if (request.getAge() != null && user.getAge() == null) {
+                user.setAge(request.getAge());
+                updated = true;
+            }
+            if (request.getPassword() != null && !request.getPassword().isBlank()) {
+                user.setPassword(request.getPassword().trim());
+                updated = true;
+            }
+            if (request.getRole() != null && (request.getRole().equalsIgnoreCase("MERCHANT") || request.getRole().equalsIgnoreCase("SHOP_OWNER")) && user.getRole() != UserRole.SHOP_OWNER) {
+                user.setRole(UserRole.SHOP_OWNER);
+                updated = true;
+            }
+            if (updated) {
+                user = userRepository.save(user);
+            }
+            if (Boolean.TRUE.equals(user.getBlocked())) {
+                throw new UnauthorizedException("Your account has been suspended. Please contact support.");
+            } else if (Boolean.TRUE.equals(user.getDeleted())) {
+                throw new UnauthorizedException("This account has been deleted. Please contact support.");
+            }
+        }
+
+        String token = jwtUtil.generateToken(user);
+        log.info("User {} authenticated successfully via direct login. New user: {}", user.getId(), isNewUser);
+
+        return AuthResponse.builder()
+                .token(token)
+                .tokenType("Bearer")
+                .userId(user.getId())
+                .phone(user.getPhone())
+                .email(user.getEmail())
+                .name(user.getName())
+                .age(user.getAge())
+                .role(user.getRole())
+                .newUser(isNewUser)
+                .build();
+    }
 }
 

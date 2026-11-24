@@ -33,6 +33,9 @@ public class AuthResponse {
     @Schema(description = "User age", example = "25")
     private Integer age;
 
+    @Schema(description = "User email", example = "user@gmail.com")
+    private String email;
+
     @Schema(description = "User role", example = "SHOP_OWNER")
     private UserRole role;
 
