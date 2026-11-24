@@ -130,10 +130,8 @@ public class SecurityConfig {
                                                 // Public analytics event ingestion
                                                 .requestMatchers(HttpMethod.POST, "/api/analytics/events").permitAll()
 
-                                                // Public auth login/OTP routes
-                                                .requestMatchers(HttpMethod.POST, "/api/auth/send-otp").permitAll()
-                                                .requestMatchers(HttpMethod.POST, "/api/auth/verify-otp").permitAll()
-                                                .requestMatchers(HttpMethod.GET, "/api/auth/check-phone/**").permitAll()
+                                                // Public auth login/registration routes
+                                                .requestMatchers("/api/auth/**").permitAll()
 
                                                 // Public API documentation
                                                 .requestMatchers(
