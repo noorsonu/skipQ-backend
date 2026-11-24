@@ -50,6 +50,7 @@ public class AdminGovernanceServiceImpl implements AdminGovernanceService {
     private final ZoneRepository zoneRepository;
     private final CategoryRepository categoryRepository;
     private final ShopStatusEventRepository shopStatusEventRepository;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Override
     @Transactional(readOnly = true)
@@ -267,6 +268,13 @@ public class AdminGovernanceServiceImpl implements AdminGovernanceService {
                 .deleted(user.getDeleted())
                 .message(message)
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public void purgeAllData() {
+        log.warn("ADMIN ACTION: Purging all database tables for clean test slate.");
+        jdbcTemplate.execute("TRUNCATE TABLE analytics_events, disputes, featured_slots, invoices, notifications, queue_sessions, reviews, shop_claims, shop_hours, shop_status_events, subscriptions, tokens, shops, users CASCADE");
     }
 }
 

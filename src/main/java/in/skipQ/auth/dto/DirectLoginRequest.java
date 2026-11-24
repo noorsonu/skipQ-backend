@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class DirectLoginRequest {
 
-    @NotBlank(message = "Phone number is required")
     private String phone;
 
     private String name;

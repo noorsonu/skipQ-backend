@@ -25,6 +25,9 @@ public class UpdateUserProfileRequest {
     @Schema(description = "User email address", example = "amit.verma@example.com")
     private String email;
 
+    @Schema(description = "User 10-digit mobile number", example = "9876543210")
+    private String phone;
+
     @Pattern(regexp = "^(en|hi|ur)$", message = "Language must be 'en', 'hi', or 'ur'")
     @Schema(description = "Preferred language code", example = "hi")
     private String language;

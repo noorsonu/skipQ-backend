@@ -64,6 +64,18 @@ public class UserServiceImpl implements UserService {
             user.setEmail(request.getEmail().trim().toLowerCase());
         }
 
+        if (request.getPhone() != null && !request.getPhone().isBlank()) {
+            String cleanPhone = request.getPhone().replaceAll("\\D", "");
+            if (cleanPhone.length() >= 10) {
+                cleanPhone = cleanPhone.substring(cleanPhone.length() - 10);
+            }
+            java.util.Optional<User> existing = userRepository.findByPhone(cleanPhone);
+            if (existing.isPresent() && !existing.get().getId().equals(user.getId())) {
+                throw new BadRequestException("This mobile number is already linked to another account.");
+            }
+            user.setPhone(cleanPhone);
+        }
+
         if (request.getLanguage() != null) {
             user.setLanguage(request.getLanguage());
         }

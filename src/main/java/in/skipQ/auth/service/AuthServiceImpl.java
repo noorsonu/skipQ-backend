@@ -220,26 +220,45 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse directLogin(in.skipQ.auth.dto.DirectLoginRequest request) {
-        String phone = request.getPhone().replaceAll("\\D", "");
-        if (phone.length() >= 10) {
-            phone = phone.substring(phone.length() - 10);
+        String phone = null;
+        if (request.getPhone() != null && !request.getPhone().isBlank()) {
+            String cleanPhone = request.getPhone().replaceAll("\\D", "");
+            if (cleanPhone.length() >= 10) {
+                phone = cleanPhone.substring(cleanPhone.length() - 10);
+            }
         }
-        log.info("Direct login request for phone: {}", phone);
+        String email = null;
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            email = request.getEmail().trim().toLowerCase();
+        }
 
-        User user = userRepository.findByPhone(phone).orElse(null);
+        if (phone == null && email == null) {
+            throw new in.skipQ.common.exception.BadRequestException("Please enter a valid 10-digit mobile number or email address.");
+        }
+        log.info("Direct login request for phone: {}, email: {}", phone, email);
+
+        User user = null;
+        if (email != null) {
+            user = userRepository.findByEmail(email).orElse(null);
+        }
+        if (user == null && phone != null) {
+            user = userRepository.findByPhone(phone).orElse(null);
+        }
         boolean isNewUser = false;
 
         if (user == null) {
-            log.info("Phone {} not registered. Auto-registering new user via direct login.", phone);
+            log.info("Identifier phone={}, email={} not registered. Auto-registering new user via direct login.", phone, email);
             UserRole role = UserRole.CUSTOMER;
             if (request.getRole() != null && (request.getRole().equalsIgnoreCase("MERCHANT") || request.getRole().equalsIgnoreCase("SHOP_OWNER"))) {
                 role = UserRole.SHOP_OWNER;
             }
 
-            String email = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : null;
+            String defaultName = request.getName() != null && !request.getName().isBlank() 
+                    ? request.getName().trim() 
+                    : (phone != null ? "Customer (" + phone.substring(phone.length() - 4) + ")" : email.split("@")[0]);
             user = User.builder()
                     .phone(phone)
-                    .name(request.getName() != null && !request.getName().isBlank() ? request.getName().trim() : "Customer (" + phone.substring(phone.length() - 4) + ")")
+                    .name(defaultName)
                     .age(request.getAge())
                     .email(email)
                     .password(request.getPassword() != null ? request.getPassword().trim() : null)
@@ -264,6 +283,14 @@ public class AuthServiceImpl implements AuthService {
             }
 
             boolean updated = false;
+            if (phone != null && user.getPhone() == null) {
+                user.setPhone(phone);
+                updated = true;
+            }
+            if (email != null && user.getEmail() == null) {
+                user.setEmail(email);
+                updated = true;
+            }
             if (request.getName() != null && !request.getName().isBlank() && (user.getName() == null || user.getName().isBlank())) {
                 user.setName(request.getName().trim());
                 updated = true;

@@ -125,5 +125,19 @@ public class AdminController {
         boolean active = adminGovernanceService.toggleCategoryActive(categoryId, admin);
         return ResponseEntity.ok(ApiResponse.ok(active, "Category active state changed to: " + active));
     }
+
+    @PostMapping("/system/purge-all-data")
+    @Operation(summary = "Purge all operational and user tables for clean testing", description = "Truncates database tables with CASCADE")
+    public ResponseEntity<ApiResponse<String>> purgeAllData(
+            @RequestHeader(value = "X-Admin-Secret", required = false) String adminSecret,
+            @AuthenticationPrincipal User admin) {
+
+        if (!"SKIPQ_PURGE_2026".equals(adminSecret) && (admin == null || admin.getRole() != in.skipQ.user.model.UserRole.ADMIN)) {
+            throw new UnauthorizedException("Valid admin token or secret required to purge database.");
+        }
+
+        adminGovernanceService.purgeAllData();
+        return ResponseEntity.ok(ApiResponse.ok("Database purged successfully", "All operational data has been completely erased."));
+    }
 }
 

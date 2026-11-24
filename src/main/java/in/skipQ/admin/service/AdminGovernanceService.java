@@ -23,5 +23,7 @@ public interface AdminGovernanceService {
     boolean toggleZoneActive(UUID zoneId, User admin);
 
     boolean toggleCategoryActive(UUID categoryId, User admin);
+
+    void purgeAllData();
 }
 
