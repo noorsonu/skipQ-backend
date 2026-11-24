@@ -234,10 +234,13 @@ public class AuthServiceImpl implements AuthService {
             if (request.getRole() != null && (request.getRole().equalsIgnoreCase("MERCHANT") || request.getRole().equalsIgnoreCase("SHOP_OWNER"))) {
                 role = UserRole.SHOP_OWNER;
             }
+
+            String email = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : null;
             user = User.builder()
                     .phone(phone)
                     .name(request.getName() != null && !request.getName().isBlank() ? request.getName().trim() : "Customer (" + phone.substring(phone.length() - 4) + ")")
                     .age(request.getAge())
+                    .email(email)
                     .password(request.getPassword() != null ? request.getPassword().trim() : null)
                     .role(role)
                     .language("hi")
@@ -246,6 +249,19 @@ public class AuthServiceImpl implements AuthService {
             user = userRepository.save(user);
             isNewUser = true;
         } else {
+            // Verify password if user already has a password set
+            if (user.getPassword() != null && !user.getPassword().isBlank()) {
+                if (request.getPassword() == null || request.getPassword().isBlank()) {
+                    throw new UnauthorizedException("Password is required to sign in.");
+                }
+                if (!user.getPassword().equals(request.getPassword().trim())) {
+                    throw new UnauthorizedException("Incorrect password. Please try again or click 'Forgot Password'.");
+                }
+            } else if (request.getPassword() != null && !request.getPassword().isBlank()) {
+                // First-time password set for legacy / previously passwordless user
+                user.setPassword(request.getPassword().trim());
+            }
+
             boolean updated = false;
             if (request.getName() != null && !request.getName().isBlank() && (user.getName() == null || user.getName().isBlank())) {
                 user.setName(request.getName().trim());
@@ -255,8 +271,8 @@ public class AuthServiceImpl implements AuthService {
                 user.setAge(request.getAge());
                 updated = true;
             }
-            if (request.getPassword() != null && !request.getPassword().isBlank()) {
-                user.setPassword(request.getPassword().trim());
+            if (request.getEmail() != null && !request.getEmail().isBlank() && (user.getEmail() == null || user.getEmail().isBlank())) {
+                user.setEmail(request.getEmail().trim().toLowerCase());
                 updated = true;
             }
             if (request.getRole() != null && (request.getRole().equalsIgnoreCase("MERCHANT") || request.getRole().equalsIgnoreCase("SHOP_OWNER")) && user.getRole() != UserRole.SHOP_OWNER) {
@@ -286,6 +302,67 @@ public class AuthServiceImpl implements AuthService {
                 .age(user.getAge())
                 .role(user.getRole())
                 .newUser(isNewUser)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public AuthResponse resetPassword(in.skipQ.auth.dto.ResetPasswordRequest request) {
+        if (request.getNewPassword() == null || request.getNewPassword().trim().length() < 4) {
+            throw new BadRequestException("Password must be at least 4 characters long.");
+        }
+
+        User user = null;
+        if (request.getPhone() != null && !request.getPhone().isBlank()) {
+            String cleanPhone = request.getPhone().replaceAll("\\D", "");
+            if (cleanPhone.length() >= 10) cleanPhone = cleanPhone.substring(cleanPhone.length() - 10);
+            user = userRepository.findByPhone(cleanPhone).orElse(null);
+        }
+
+        if (user == null && request.getEmail() != null && !request.getEmail().isBlank()) {
+            user = userRepository.findByEmail(request.getEmail().trim().toLowerCase()).orElse(null);
+        }
+
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found with the provided details.");
+        }
+
+        // Option B: Google 1-Click recovery verification
+        if (request.getGoogleId() != null && !request.getGoogleId().isBlank()) {
+            if (request.getEmail() == null || user.getEmail() == null ||
+                !request.getEmail().trim().equalsIgnoreCase(user.getEmail().trim())) {
+                throw new UnauthorizedException("Google email does not match the registered email for this account.");
+            }
+            log.info("User {} verified via Google recovery.", user.getId());
+        } else {
+            // Option A: Email verification match
+            if (request.getEmail() == null || request.getEmail().isBlank()) {
+                throw new BadRequestException("Registered email address is required to reset password.");
+            }
+            if (user.getEmail() == null || user.getEmail().isBlank()) {
+                // If user had no email registered, allow setting it during this reset
+                user.setEmail(request.getEmail().trim().toLowerCase());
+            } else if (!user.getEmail().trim().equalsIgnoreCase(request.getEmail().trim())) {
+                throw new UnauthorizedException("The email address provided does not match our records for this account.");
+            }
+        }
+
+        // Update password
+        user.setPassword(request.getNewPassword().trim());
+        user = userRepository.save(user);
+        log.info("Password successfully reset for user: {}", user.getId());
+
+        String token = jwtUtil.generateToken(user);
+        return AuthResponse.builder()
+                .token(token)
+                .tokenType("Bearer")
+                .userId(user.getId())
+                .phone(user.getPhone())
+                .email(user.getEmail())
+                .name(user.getName())
+                .age(user.getAge())
+                .role(user.getRole())
+                .newUser(false)
                 .build();
     }
 }

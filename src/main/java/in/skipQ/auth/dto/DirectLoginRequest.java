@@ -19,6 +19,8 @@ public class DirectLoginRequest {
 
     private Integer age;
 
+    private String email;
+
     private String password;
 
     private String role; // CUSTOMER or MERCHANT

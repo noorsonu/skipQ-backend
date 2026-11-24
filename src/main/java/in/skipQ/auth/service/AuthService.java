@@ -18,6 +18,8 @@ public interface AuthService {
 
     AuthResponse directLogin(DirectLoginRequest request);
 
+    AuthResponse resetPassword(in.skipQ.auth.dto.ResetPasswordRequest request);
+
     User getCurrentUser(String token);
 }
 

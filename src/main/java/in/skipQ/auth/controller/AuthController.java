@@ -73,6 +73,13 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok(response, "Direct authentication successful"));
     }
 
+    @PostMapping("/reset-password")
+    @Operation(summary = "Reset account password", description = "Resets user password via email verification (Option A) or Google 1-click verification (Option B)")
+    public ResponseEntity<ApiResponse<AuthResponse>> resetPassword(@Valid @RequestBody in.skipQ.auth.dto.ResetPasswordRequest request) {
+        AuthResponse response = authService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.ok(response, "Password reset successful"));
+    }
+
     @GetMapping("/me")
     @Operation(summary = "Get current authenticated user profile", description = "Decodes JWT and fetches current user details")
     public ResponseEntity<ApiResponse<User>> getCurrentUser(@RequestHeader(value = "Authorization", required = false) String token) {
