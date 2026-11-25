@@ -274,7 +274,12 @@ public class AdminGovernanceServiceImpl implements AdminGovernanceService {
     @Transactional
     public void purgeAllData() {
         log.warn("ADMIN ACTION: Purging all database tables for clean test slate.");
-        jdbcTemplate.execute("TRUNCATE TABLE analytics_events, disputes, featured_slots, invoices, notifications, queue_sessions, reviews, shop_claims, shop_hours, shop_status_events, subscriptions, tokens, shops, users CASCADE");
+        jdbcTemplate.execute("TRUNCATE TABLE analytics_events, audit_logs, daily_shop_metrics, device_tokens, dispute_messages, disputes, featured_slots, invoices, notifications, notification_templates, queue_sessions, reviews, shop_claims, shop_hours, shop_status_events, subscriptions, tokens, shops, users RESTART IDENTITY CASCADE");
+        try {
+            jdbcTemplate.execute("DO $$ DECLARE seq RECORD; BEGIN FOR seq IN (SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public') LOOP EXECUTE 'ALTER SEQUENCE ' || quote_ident(seq.sequence_name) || ' RESTART WITH 1'; END LOOP; END $$;");
+        } catch (Exception e) {
+            log.warn("Sequence reset warning: {}", e.getMessage());
+        }
     }
 }
 
