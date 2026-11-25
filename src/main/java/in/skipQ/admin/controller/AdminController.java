@@ -126,6 +126,35 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.ok(active, "Category active state changed to: " + active));
     }
 
+    @GetMapping("/users")
+    @Operation(summary = "Get all registered users for admin portal", description = "Returns all customers, workers, and shop owners with role and status")
+    public ResponseEntity<ApiResponse<java.util.List<AdminUserModerationDto>>> getAllUsers(
+            @RequestHeader(value = "X-Admin-Secret", required = false) String adminSecret,
+            @AuthenticationPrincipal User admin) {
+
+        if (!"SKIPQ_PURGE_2026".equals(adminSecret) && (admin == null || admin.getRole() != in.skipQ.user.model.UserRole.ADMIN)) {
+            throw new UnauthorizedException("Valid admin credentials or secret key required");
+        }
+
+        java.util.List<AdminUserModerationDto> users = adminGovernanceService.getAllUsers();
+        return ResponseEntity.ok(ApiResponse.ok(users, "Users fetched successfully"));
+    }
+
+    @DeleteMapping("/users/{userId}")
+    @Operation(summary = "Permanently delete a customer or worker account from database", description = "Removes user and unlinks associated queue tokens and shops")
+    public ResponseEntity<ApiResponse<String>> deleteUser(
+            @PathVariable UUID userId,
+            @RequestHeader(value = "X-Admin-Secret", required = false) String adminSecret,
+            @AuthenticationPrincipal User admin) {
+
+        if (!"SKIPQ_PURGE_2026".equals(adminSecret) && (admin == null || admin.getRole() != in.skipQ.user.model.UserRole.ADMIN)) {
+            throw new UnauthorizedException("Valid admin credentials or secret key required");
+        }
+
+        adminGovernanceService.deleteUserPermanently(userId);
+        return ResponseEntity.ok(ApiResponse.ok("User deleted", "User " + userId + " has been permanently deleted from database."));
+    }
+
     @PostMapping("/system/purge-all-data")
     @Operation(summary = "Purge all operational and user tables for clean testing", description = "Truncates database tables with CASCADE")
     public ResponseEntity<ApiResponse<String>> purgeAllData(

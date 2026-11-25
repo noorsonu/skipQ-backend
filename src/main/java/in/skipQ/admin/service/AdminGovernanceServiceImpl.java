@@ -263,11 +263,42 @@ public class AdminGovernanceServiceImpl implements AdminGovernanceService {
                 .userId(user.getId())
                 .phone(user.getPhone())
                 .name(user.getName())
+                .email(user.getEmail())
+                .age(user.getAge())
+                .createdAt(user.getCreatedAt())
                 .role(user.getRole())
                 .blocked(user.getBlocked())
                 .deleted(user.getDeleted())
                 .message(message)
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AdminUserModerationDto> getAllUsers() {
+        return userRepository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"))
+                .stream()
+                .map(u -> toUserModerationDto(u, null))
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void deleteUserPermanently(UUID userId) {
+        log.warn("ADMIN ACTION: Permanently deleting user {}", userId);
+        jdbcTemplate.update("UPDATE shops SET owner_user_id = NULL WHERE owner_user_id = ?", userId);
+        jdbcTemplate.update("UPDATE tokens SET user_id = NULL WHERE user_id = ?", userId);
+        try {
+            jdbcTemplate.update("DELETE FROM device_tokens WHERE user_id = ?", userId);
+        } catch (Exception ignored) {}
+        try {
+            jdbcTemplate.update("DELETE FROM reviews WHERE user_id = ?", userId);
+        } catch (Exception ignored) {}
+        try {
+            jdbcTemplate.update("DELETE FROM dispute_messages WHERE sender_user_id = ?", userId);
+            jdbcTemplate.update("DELETE FROM disputes WHERE user_id = ?", userId);
+        } catch (Exception ignored) {}
+        jdbcTemplate.update("DELETE FROM users WHERE id = ?", userId);
     }
 
     @Override

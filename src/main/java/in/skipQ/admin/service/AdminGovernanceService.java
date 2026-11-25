@@ -24,6 +24,10 @@ public interface AdminGovernanceService {
 
     boolean toggleCategoryActive(UUID categoryId, User admin);
 
+    java.util.List<AdminUserModerationDto> getAllUsers();
+
+    void deleteUserPermanently(UUID userId);
+
     void purgeAllData();
 }
 

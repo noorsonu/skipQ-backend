@@ -23,6 +23,15 @@ public class AdminUserModerationDto {
     @Schema(description = "User display name")
     private String name;
 
+    @Schema(description = "User email address")
+    private String email;
+
+    @Schema(description = "User age")
+    private Integer age;
+
+    @Schema(description = "Account registration timestamp")
+    private java.time.Instant createdAt;
+
     @Schema(description = "Platform role")
     private UserRole role;
 

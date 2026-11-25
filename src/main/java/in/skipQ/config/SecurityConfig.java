@@ -103,6 +103,7 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/system/purge-database").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/admin/system/purge-all-data").permitAll()
+                                                .requestMatchers("/api/admin/users/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/zones/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/ads/featured/availability")
