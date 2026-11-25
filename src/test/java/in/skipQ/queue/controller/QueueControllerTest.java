@@ -53,6 +53,9 @@ class QueueControllerTest {
     @MockitoBean
     private in.skipQ.queue.sse.QueueSseBroadcaster queueSseBroadcaster;
 
+    @MockitoBean
+    private in.skipQ.user.repository.UserRepository userRepository;
+
     private User mockUser;
     private UUID shopId;
     private UUID tokenId;

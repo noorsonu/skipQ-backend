@@ -38,6 +38,9 @@ class AuthControllerTest {
     @MockitoBean
     private AuthService authService;
 
+    @MockitoBean
+    private in.skipQ.user.repository.UserRepository userRepository;
+
     @Test
     @DisplayName("POST /api/auth/send-otp sends OTP and returns 200")
     void shouldSendOtp() throws Exception {
