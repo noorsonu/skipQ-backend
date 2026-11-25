@@ -327,10 +327,8 @@ public class AuthServiceImpl implements AuthService {
             // If not found, DO NOT auto-register or login!
             // ==========================================
             if (user == null) {
-                String missingId = email != null ? "email address (" + email + ")"
-                        : "mobile number (+91 " + phone + ")";
                 throw new in.skipQ.common.exception.ResourceNotFoundException(
-                        "Account not found with this " + missingId + ". Please register your account first.");
+                        "Account not found. Please register first.");
             }
 
             if (Boolean.TRUE.equals(user.getBlocked())) {
