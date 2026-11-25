@@ -105,5 +105,12 @@ public class Token {
     @Column(name = "group_member_index", nullable = false)
     @Builder.Default
     private Integer groupMemberIndex = 1;
+
+    @Column(name = "selected_services", columnDefinition = "TEXT")
+    private String selectedServices;
+
+    @Column(name = "service_duration_min", nullable = false)
+    @Builder.Default
+    private Integer serviceDurationMin = 15;
 }
 

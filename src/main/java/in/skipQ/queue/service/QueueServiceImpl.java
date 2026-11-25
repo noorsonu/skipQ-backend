@@ -106,8 +106,29 @@ public class QueueServiceImpl implements QueueService {
         }
 
         long waitingAhead = tokenRepository.countBySessionIdAndStatus(session.getId(), TokenStatus.WAITING);
-        int serviceDuration = shop.getCategory() != null ? shop.getCategory().getDefaultServiceMin() : 15;
+        int defaultServiceDuration = shop.getCategory() != null ? shop.getCategory().getDefaultServiceMin() : 15;
         int delay = session.getDelayMinutes() != null ? session.getDelayMinutes() : 0;
+
+        // Dynamic sum of service durations of all tokens ahead
+        java.util.List<Token> activeAhead = tokenRepository.findBySessionIdAndStatusIn(
+                session.getId(), java.util.List.of(TokenStatus.SERVING, TokenStatus.WAITING));
+        int totalActiveAheadDuration = 0;
+        if (activeAhead != null) {
+            for (Token t : activeAhead) {
+                int dur = (t.getServiceDurationMin() != null && t.getServiceDurationMin() > 0)
+                        ? t.getServiceDurationMin()
+                        : defaultServiceDuration;
+                totalActiveAheadDuration += dur;
+            }
+        }
+
+        String servicesStr = null;
+        if (request.getSelectedServices() != null && !request.getSelectedServices().isEmpty()) {
+            servicesStr = String.join(", ", request.getSelectedServices());
+        }
+        int userDuration = (request.getServiceDurationMin() != null && request.getServiceDurationMin() > 0)
+                ? request.getServiceDurationMin()
+                : defaultServiceDuration;
 
         String customerPhone = (request.getCustomerPhone() != null && !request.getCustomerPhone().isBlank())
                 ? request.getCustomerPhone().trim()
@@ -125,7 +146,7 @@ public class QueueServiceImpl implements QueueService {
             session.setTotalTokensIssued(nextTokenNumber);
             queueSessionRepository.save(session);
 
-            int estimatedWait = (int) ((waitingAhead + i) * serviceDuration) + delay;
+            int estimatedWait = totalActiveAheadDuration + (i * userDuration) + delay;
             String memberName = primaryCustomerName;
             if (request.getMemberNames() != null && i < request.getMemberNames().size() && request.getMemberNames().get(i) != null && !request.getMemberNames().get(i).isBlank()) {
                 memberName = request.getMemberNames().get(i).trim();
@@ -143,6 +164,8 @@ public class QueueServiceImpl implements QueueService {
                     .source(request.getSource() != null ? request.getSource() : "APP")
                     .customerName(memberName)
                     .customerPhone(customerPhone)
+                    .selectedServices(servicesStr)
+                    .serviceDurationMin(userDuration)
                     .estimatedWaitMin(Math.max(estimatedWait, 5))
                     .joinedAt(Instant.now())
                     .groupId(groupId)
@@ -231,9 +254,32 @@ public class QueueServiceImpl implements QueueService {
         queueSessionRepository.save(session);
 
         long waitingAhead = tokenRepository.countBySessionIdAndStatus(session.getId(), TokenStatus.WAITING);
-        int serviceDuration = shop.getCategory() != null ? shop.getCategory().getDefaultServiceMin() : 15;
+        int defaultServiceDuration = shop.getCategory() != null ? shop.getCategory().getDefaultServiceMin() : 15;
         int delay = session.getDelayMinutes() != null ? session.getDelayMinutes() : 0;
-        int estimatedWait = (int) (waitingAhead * serviceDuration) + delay;
+
+        java.util.List<Token> activeAhead = tokenRepository.findBySessionIdAndStatusIn(
+                session.getId(), java.util.List.of(TokenStatus.SERVING, TokenStatus.WAITING));
+        int totalActiveAheadDuration = 0;
+        if (activeAhead != null) {
+            for (Token t : activeAhead) {
+                int dur = (t.getServiceDurationMin() != null && t.getServiceDurationMin() > 0)
+                        ? t.getServiceDurationMin()
+                        : defaultServiceDuration;
+                totalActiveAheadDuration += dur;
+            }
+        }
+
+        String walkinServicesStr = null;
+        if (request != null && request.getSelectedServices() != null && !request.getSelectedServices().isEmpty()) {
+            walkinServicesStr = String.join(", ", request.getSelectedServices());
+        } else if (request != null && request.getNote() != null && !request.getNote().isBlank()) {
+            walkinServicesStr = request.getNote().trim();
+        }
+        int walkinDuration = (request != null && request.getServiceDurationMin() != null && request.getServiceDurationMin() > 0)
+                ? request.getServiceDurationMin()
+                : defaultServiceDuration;
+
+        int estimatedWait = totalActiveAheadDuration + delay;
 
         String customerName = (request != null && request.getCustomerName() != null && !request.getCustomerName().isBlank())
                 ? request.getCustomerName().trim()
@@ -253,6 +299,8 @@ public class QueueServiceImpl implements QueueService {
                 .source("WALK_IN")
                 .customerName(customerName)
                 .customerPhone(customerPhone)
+                .selectedServices(walkinServicesStr)
+                .serviceDurationMin(walkinDuration)
                 .estimatedWaitMin(Math.max(estimatedWait, 5))
                 .joinedAt(Instant.now())
                 .build();

@@ -31,5 +31,11 @@ public class JoinQueueRequest {
 
     @Schema(description = "Optional list of companion names", example = "[\"Rahul\", \"Aman\", \"Rohit\"]")
     private java.util.List<String> memberNames;
+
+    @Schema(description = "Selected service names chosen by customer", example = "[\"Haircut\", \"Beard Styling\"]")
+    private java.util.List<String> selectedServices;
+
+    @Schema(description = "Total expected service duration in minutes", example = "25")
+    private Integer serviceDurationMin;
 }
 

@@ -79,7 +79,8 @@ public class AuthServiceImpl implements AuthService {
             isNewUser = true;
         } else {
             boolean updated = false;
-            if (request.getName() != null && !request.getName().isBlank() && (user.getName() == null || user.getName().isBlank())) {
+            if (request.getName() != null && !request.getName().isBlank()
+                    && (user.getName() == null || user.getName().isBlank())) {
                 user.setName(request.getName().trim());
                 updated = true;
             }
@@ -93,7 +94,8 @@ public class AuthServiceImpl implements AuthService {
             if (Boolean.TRUE.equals(user.getBlocked())) {
                 throw new UnauthorizedException("Your account has been suspended. Please contact support.");
             } else if (Boolean.TRUE.equals(user.getDeleted())) {
-                throw new UnauthorizedException("This account has been deleted. Please register with a new number or contact support.");
+                throw new UnauthorizedException(
+                        "This account has been deleted. Please register with a new number or contact support.");
             }
         }
 
@@ -159,18 +161,21 @@ public class AuthServiceImpl implements AuthService {
         if (user == null) {
             log.info("Email {} not registered. Auto-registering new user via Google.", email);
             UserRole role = UserRole.CUSTOMER;
-            if (request.getRole() != null && (request.getRole().equalsIgnoreCase("MERCHANT") || request.getRole().equalsIgnoreCase("SHOP_OWNER"))) {
+            if (request.getRole() != null && (request.getRole().equalsIgnoreCase("MERCHANT")
+                    || request.getRole().equalsIgnoreCase("SHOP_OWNER"))) {
                 role = UserRole.SHOP_OWNER;
             }
             String cleanPhone = null;
             if (request.getPhone() != null && !request.getPhone().isBlank()) {
                 cleanPhone = request.getPhone().replaceAll("\\D", "");
-                if (cleanPhone.length() >= 10) cleanPhone = cleanPhone.substring(cleanPhone.length() - 10);
+                if (cleanPhone.length() >= 10)
+                    cleanPhone = cleanPhone.substring(cleanPhone.length() - 10);
             }
             user = User.builder()
                     .email(email)
                     .phone(cleanPhone)
-                    .name(request.getName() != null && !request.getName().isBlank() ? request.getName().trim() : "Google User")
+                    .name(request.getName() != null && !request.getName().isBlank() ? request.getName().trim()
+                            : "Google User")
                     .role(role)
                     .language("hi")
                     .blocked(false)
@@ -183,11 +188,15 @@ public class AuthServiceImpl implements AuthService {
                 user.setEmail(email);
                 updated = true;
             }
-            if (request.getName() != null && !request.getName().isBlank() && (user.getName() == null || user.getName().isBlank())) {
+            if (request.getName() != null && !request.getName().isBlank()
+                    && (user.getName() == null || user.getName().isBlank())) {
                 user.setName(request.getName().trim());
                 updated = true;
             }
-            if (request.getRole() != null && (request.getRole().equalsIgnoreCase("MERCHANT") || request.getRole().equalsIgnoreCase("SHOP_OWNER")) && user.getRole() != UserRole.SHOP_OWNER) {
+            if (request.getRole() != null
+                    && (request.getRole().equalsIgnoreCase("MERCHANT")
+                            || request.getRole().equalsIgnoreCase("SHOP_OWNER"))
+                    && user.getRole() != UserRole.SHOP_OWNER) {
                 user.setRole(UserRole.SHOP_OWNER);
                 updated = true;
             }
@@ -233,13 +242,16 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (phone == null && email == null) {
-            throw new in.skipQ.common.exception.BadRequestException("Please enter a valid 10-digit mobile number or email address.");
+            throw new in.skipQ.common.exception.BadRequestException(
+                    "Please enter a valid 10-digit mobile number or email address.");
         }
 
-        // Determine if action is Registration or Login - STRICT: Only "register" triggers registration
+        // Determine if action is Registration or Login - STRICT: Only "register"
+        // triggers registration
         boolean isRegisterAction = "register".equalsIgnoreCase(request.getAction());
 
-        log.info("Direct auth request: action={}, phone={}, email={}", isRegisterAction ? "register" : "login", phone, email);
+        log.info("Direct auth request: action={}, phone={}, email={}", isRegisterAction ? "register" : "login", phone,
+                email);
 
         User user = null;
         if (email != null) {
@@ -258,33 +270,39 @@ public class AuthServiceImpl implements AuthService {
             // ==========================================
             if (phone != null && userRepository.findByPhone(phone).isPresent()) {
                 throw new in.skipQ.common.exception.DuplicateResourceException(
-                        "An account is already registered with mobile number (+91 " + phone + "). Please switch to Log In.");
+                        "An account is already registered with mobile number (+91 " + phone
+                                + "). Please switch to Log In.");
             }
             if (email != null && userRepository.findByEmail(email).isPresent()) {
                 throw new in.skipQ.common.exception.DuplicateResourceException(
-                        "An account is already registered with email address (" + email + "). Please switch to Log In.");
+                        "An account is already registered with email address (" + email
+                                + "). Please switch to Log In.");
             }
 
             if (request.getName() == null || request.getName().trim().isBlank()) {
                 throw new in.skipQ.common.exception.BadRequestException("Full name is required for registration.");
             }
             if (phone == null || phone.length() != 10) {
-                throw new in.skipQ.common.exception.BadRequestException("A valid 10-digit mobile number is required for registration.");
+                throw new in.skipQ.common.exception.BadRequestException(
+                        "A valid 10-digit mobile number is required for registration.");
             }
             if (email == null || !email.contains("@")) {
-                throw new in.skipQ.common.exception.BadRequestException("A valid email address is required for registration.");
+                throw new in.skipQ.common.exception.BadRequestException(
+                        "A valid email address is required for registration.");
             }
             if (request.getPassword() == null || request.getPassword().trim().length() < 4) {
                 throw new in.skipQ.common.exception.BadRequestException("Password must be at least 4 characters long.");
             }
 
             UserRole role = UserRole.CUSTOMER;
-            if (request.getRole() != null && (request.getRole().equalsIgnoreCase("MERCHANT") || request.getRole().equalsIgnoreCase("SHOP_OWNER"))) {
+            if (request.getRole() != null && (request.getRole().equalsIgnoreCase("MERCHANT")
+                    || request.getRole().equalsIgnoreCase("SHOP_OWNER"))) {
                 role = UserRole.SHOP_OWNER;
             } else {
                 // Customer must provide valid age
                 if (request.getAge() == null || request.getAge() < 5 || request.getAge() > 115) {
-                    throw new in.skipQ.common.exception.BadRequestException("Please enter a valid age (between 5 and 115) for customer registration.");
+                    throw new in.skipQ.common.exception.BadRequestException(
+                            "Please enter a valid age (between 5 and 115) for customer registration.");
                 }
             }
 
@@ -309,14 +327,17 @@ public class AuthServiceImpl implements AuthService {
             // If not found, DO NOT auto-register or login!
             // ==========================================
             if (user == null) {
-                String missingId = email != null ? "email address (" + email + ")" : "mobile number (+91 " + phone + ")";
-                throw new in.skipQ.common.exception.ResourceNotFoundException("Account not found with this " + missingId + ". Please register your account first.");
+                String missingId = email != null ? "email address (" + email + ")"
+                        : "mobile number (+91 " + phone + ")";
+                throw new in.skipQ.common.exception.ResourceNotFoundException(
+                        "Account not found with this " + missingId + ". Please register your account first.");
             }
 
             if (Boolean.TRUE.equals(user.getBlocked())) {
                 throw new UnauthorizedException("Your account has been suspended. Please contact support.");
             } else if (Boolean.TRUE.equals(user.getDeleted())) {
-                throw new UnauthorizedException("This account has been deleted. Please register with a new number or contact support.");
+                throw new UnauthorizedException(
+                        "This account has been deleted. Please register with a new number or contact support.");
             }
 
             // Verify password
@@ -380,7 +401,8 @@ public class AuthServiceImpl implements AuthService {
         User user = null;
         if (request.getPhone() != null && !request.getPhone().isBlank()) {
             String cleanPhone = request.getPhone().replaceAll("\\D", "");
-            if (cleanPhone.length() >= 10) cleanPhone = cleanPhone.substring(cleanPhone.length() - 10);
+            if (cleanPhone.length() >= 10)
+                cleanPhone = cleanPhone.substring(cleanPhone.length() - 10);
             user = userRepository.findByPhone(cleanPhone).orElse(null);
         }
 
@@ -395,7 +417,7 @@ public class AuthServiceImpl implements AuthService {
         // Option B: Google 1-Click recovery verification
         if (request.getGoogleId() != null && !request.getGoogleId().isBlank()) {
             if (request.getEmail() == null || user.getEmail() == null ||
-                !request.getEmail().trim().equalsIgnoreCase(user.getEmail().trim())) {
+                    !request.getEmail().trim().equalsIgnoreCase(user.getEmail().trim())) {
                 throw new UnauthorizedException("Google email does not match the registered email for this account.");
             }
             log.info("User {} verified via Google recovery.", user.getId());
@@ -408,7 +430,8 @@ public class AuthServiceImpl implements AuthService {
                 // If user had no email registered, allow setting it during this reset
                 user.setEmail(request.getEmail().trim().toLowerCase());
             } else if (!user.getEmail().trim().equalsIgnoreCase(request.getEmail().trim())) {
-                throw new UnauthorizedException("The email address provided does not match our records for this account.");
+                throw new UnauthorizedException(
+                        "The email address provided does not match our records for this account.");
             }
         }
 
@@ -431,4 +454,3 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 }
-

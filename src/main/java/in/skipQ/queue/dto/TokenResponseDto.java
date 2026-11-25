@@ -37,5 +37,7 @@ public class TokenResponseDto {
     private UUID groupId;
     private Integer groupSize;
     private Integer groupMemberIndex;
+    private String selectedServices;
+    private Integer serviceDurationMin;
 }
 

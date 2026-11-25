@@ -22,5 +22,11 @@ public class IssueWalkInTokenRequest {
 
     @Schema(description = "Optional service notes / instructions", example = "Haircut only")
     private String note;
+
+    @Schema(description = "Selected service names chosen by customer or walk-in operator", example = "[\"Haircut\", \"Shave\"]")
+    private java.util.List<String> selectedServices;
+
+    @Schema(description = "Total expected service duration in minutes", example = "25")
+    private Integer serviceDurationMin;
 }
 
