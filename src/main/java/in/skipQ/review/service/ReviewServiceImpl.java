@@ -120,11 +120,11 @@ public class ReviewServiceImpl implements ReviewService {
         long reviewCount = reviewRepository.countActiveReviewsByShopId(shopId);
         Double avg = reviewRepository.getAverageStarsByShopId(shopId);
 
-        // Rating and reviews are visible for everyone immediately (> 0)
+        // Initial rating is 0.0 when no reviews exist; live calculated average up to max 5.0
         boolean isRatingVisible = reviewCount > 0;
-        Double roundedAvg = null;
+        Double roundedAvg = 0.0;
         if (isRatingVisible && avg != null) {
-            roundedAvg = Math.round(avg * 10.0) / 10.0;
+            roundedAvg = Math.min(5.0, Math.max(1.0, Math.round(avg * 10.0) / 10.0));
         }
 
         // FR-1107: Automatic ETA accuracy score
