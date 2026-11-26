@@ -18,9 +18,11 @@ import java.util.UUID;
 @Schema(description = "Request to submit a post-service rating (BRD FR-1101, FR-1102)")
 public class CreateReviewRequest {
 
-    @NotNull(message = "Token ID is required to verify actual service")
-    @Schema(description = "Completed/Served token UUID", example = "d1b2c3d4-0000-0000-0000-000000000001")
+    @Schema(description = "Optional completed/Served token UUID", example = "d1b2c3d4-0000-0000-0000-000000000001")
     private UUID tokenId;
+
+    @Schema(description = "Shop UUID for direct shop reviews", example = "d1b2c3d4-0000-0000-0000-000000000001")
+    private UUID shopId;
 
     @NotNull(message = "Rating stars are required")
     @Min(value = 1, message = "Rating must be at least 1 star")

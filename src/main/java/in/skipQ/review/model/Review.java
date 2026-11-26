@@ -28,8 +28,8 @@ public class Review {
     @JoinColumn(name = "shop_id", nullable = false)
     private Shop shop;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "token_id", nullable = false, unique = true)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "token_id")
     private Token token;
 
     @ManyToOne(fetch = FetchType.LAZY)
