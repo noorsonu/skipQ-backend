@@ -287,14 +287,26 @@ public class AdminGovernanceServiceImpl implements AdminGovernanceService {
     public void deleteUserPermanently(UUID userId) {
         log.warn("ADMIN ACTION: Permanently deleting user {}", userId);
 
-        // 1. If this user is an owner of any shop(s), delete their shops
-        // PostgreSQL foreign keys on shops(id) will automatically CASCADE delete tokens, queue sessions, hours, status events, etc.
-        jdbcTemplate.update("DELETE FROM shops WHERE owner_user_id = ?", userId);
+        // 1. If this user is an owner of any shop(s), delete reviews associated with their shops first
+        // (to avoid ON DELETE RESTRICT on reviews.token_id)
+        try {
+            jdbcTemplate.update("DELETE FROM reviews WHERE shop_id IN (SELECT id FROM shops WHERE owner_user_id = ?)", userId);
+        } catch (Exception ignored) {}
 
-        // 2. Anonymize/unlink any tokens where this user was a customer
-        jdbcTemplate.update("UPDATE tokens SET user_id = NULL WHERE user_id = ?", userId);
+        // 2. Cascade delete the shop(s)
+        try {
+            jdbcTemplate.update("DELETE FROM shops WHERE owner_user_id = ?", userId);
+        } catch (Exception e) {
+            log.warn("Error deleting shops for owner {}: {}", userId, e.getMessage());
+            jdbcTemplate.update("UPDATE shops SET owner_user_id = NULL WHERE owner_user_id = ?", userId);
+        }
 
-        // 3. Delete the user
+        // 3. Anonymize/unlink any tokens where this user was a customer
+        try {
+            jdbcTemplate.update("UPDATE tokens SET user_id = NULL WHERE user_id = ?", userId);
+        } catch (Exception ignored) {}
+
+        // 4. Delete the user
         // PostgreSQL CASCADE foreign keys on users(id) will automatically remove devices, notifications, shop claims,
         // and SET NULL on any remaining token/review/dispute records without constraint errors.
         jdbcTemplate.update("DELETE FROM users WHERE id = ?", userId);
