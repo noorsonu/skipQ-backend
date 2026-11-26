@@ -286,8 +286,20 @@ public class AdminGovernanceServiceImpl implements AdminGovernanceService {
     @Transactional
     public void deleteUserPermanently(UUID userId) {
         log.warn("ADMIN ACTION: Permanently deleting user {}", userId);
-        jdbcTemplate.update("UPDATE shops SET owner_user_id = NULL WHERE owner_user_id = ?", userId);
+
+        // 1. If this user owns any shop(s), cascade delete the shop and its related queue sessions/tokens
+        try {
+            jdbcTemplate.update("DELETE FROM notifications WHERE shop_id IN (SELECT id FROM shops WHERE owner_user_id = ?)", userId);
+            jdbcTemplate.update("DELETE FROM shops WHERE owner_user_id = ?", userId);
+        } catch (Exception e) {
+            log.warn("Error cascading shop deletion for owner {}: {}", userId, e.getMessage());
+            jdbcTemplate.update("UPDATE shops SET owner_user_id = NULL WHERE owner_user_id = ?", userId);
+        }
+
+        // 2. Anonymize/clean tokens where this user was a customer
         jdbcTemplate.update("UPDATE tokens SET user_id = NULL WHERE user_id = ?", userId);
+
+        // 3. Clean user-specific records
         try {
             jdbcTemplate.update("DELETE FROM device_tokens WHERE user_id = ?", userId);
         } catch (Exception ignored) {}
@@ -298,6 +310,11 @@ public class AdminGovernanceServiceImpl implements AdminGovernanceService {
             jdbcTemplate.update("DELETE FROM dispute_messages WHERE sender_user_id = ?", userId);
             jdbcTemplate.update("DELETE FROM disputes WHERE user_id = ?", userId);
         } catch (Exception ignored) {}
+        try {
+            jdbcTemplate.update("DELETE FROM notifications WHERE user_id = ?", userId);
+        } catch (Exception ignored) {}
+
+        // 4. Finally delete the user account
         jdbcTemplate.update("DELETE FROM users WHERE id = ?", userId);
     }
 
