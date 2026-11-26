@@ -287,34 +287,16 @@ public class AdminGovernanceServiceImpl implements AdminGovernanceService {
     public void deleteUserPermanently(UUID userId) {
         log.warn("ADMIN ACTION: Permanently deleting user {}", userId);
 
-        // 1. If this user owns any shop(s), cascade delete the shop and its related queue sessions/tokens
-        try {
-            jdbcTemplate.update("DELETE FROM notifications WHERE shop_id IN (SELECT id FROM shops WHERE owner_user_id = ?)", userId);
-            jdbcTemplate.update("DELETE FROM shops WHERE owner_user_id = ?", userId);
-        } catch (Exception e) {
-            log.warn("Error cascading shop deletion for owner {}: {}", userId, e.getMessage());
-            jdbcTemplate.update("UPDATE shops SET owner_user_id = NULL WHERE owner_user_id = ?", userId);
-        }
+        // 1. If this user is an owner of any shop(s), delete their shops
+        // PostgreSQL foreign keys on shops(id) will automatically CASCADE delete tokens, queue sessions, hours, status events, etc.
+        jdbcTemplate.update("DELETE FROM shops WHERE owner_user_id = ?", userId);
 
-        // 2. Anonymize/clean tokens where this user was a customer
+        // 2. Anonymize/unlink any tokens where this user was a customer
         jdbcTemplate.update("UPDATE tokens SET user_id = NULL WHERE user_id = ?", userId);
 
-        // 3. Clean user-specific records
-        try {
-            jdbcTemplate.update("DELETE FROM device_tokens WHERE user_id = ?", userId);
-        } catch (Exception ignored) {}
-        try {
-            jdbcTemplate.update("DELETE FROM reviews WHERE user_id = ?", userId);
-        } catch (Exception ignored) {}
-        try {
-            jdbcTemplate.update("DELETE FROM dispute_messages WHERE sender_user_id = ?", userId);
-            jdbcTemplate.update("DELETE FROM disputes WHERE user_id = ?", userId);
-        } catch (Exception ignored) {}
-        try {
-            jdbcTemplate.update("DELETE FROM notifications WHERE user_id = ?", userId);
-        } catch (Exception ignored) {}
-
-        // 4. Finally delete the user account
+        // 3. Delete the user
+        // PostgreSQL CASCADE foreign keys on users(id) will automatically remove devices, notifications, shop claims,
+        // and SET NULL on any remaining token/review/dispute records without constraint errors.
         jdbcTemplate.update("DELETE FROM users WHERE id = ?", userId);
     }
 
@@ -322,7 +304,7 @@ public class AdminGovernanceServiceImpl implements AdminGovernanceService {
     @Transactional
     public void purgeAllData() {
         log.warn("ADMIN ACTION: Purging all database tables for clean test slate.");
-        jdbcTemplate.execute("TRUNCATE TABLE analytics_events, audit_logs, daily_shop_metrics, device_tokens, dispute_messages, disputes, featured_slots, invoices, notifications, notification_templates, queue_sessions, reviews, shop_claims, shop_hours, shop_status_events, subscriptions, tokens, shops, users RESTART IDENTITY CASCADE");
+        jdbcTemplate.execute("TRUNCATE TABLE analytics_events, audit_logs, daily_shop_metrics, devices, disputes, featured_slots, invoices, notifications, notification_templates, queue_sessions, reviews, shop_claims, shop_hours, shop_status_events, subscriptions, token_events, tokens, shops, users RESTART IDENTITY CASCADE");
         try {
             jdbcTemplate.execute("DO $$ DECLARE seq RECORD; BEGIN FOR seq IN (SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public') LOOP EXECUTE 'ALTER SEQUENCE ' || quote_ident(seq.sequence_name) || ' RESTART WITH 1'; END LOOP; END $$;");
         } catch (Exception e) {
